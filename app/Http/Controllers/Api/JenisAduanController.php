@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\KitabSurah;
+use App\Models\JenisAduan;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
 
-class KitabSurahController extends Controller
+class JenisAduanController extends Controller
 {
     public function __construct()
     {
+        // Apply role-based middleware similar to the previous controller
         $this->middleware('role:1,2,3,4')->only(['index', 'show']);
         $this->middleware('role:2,3,4')->only(['store', 'update']);
         $this->middleware('role:4')->only('destroy');
@@ -20,27 +20,26 @@ class KitabSurahController extends Controller
     public function index()
     {
         try {
-            $kitabSurah = KitabSurah::with('jenisSetoran')->get();
+            $jenisAduan = JenisAduan::all();
 
-            if ($kitabSurah->isEmpty()) {
+            if ($jenisAduan->isEmpty()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'No kitab/surah found',
+                    'message' => 'No complaint types found',
                     'data' => []
                 ], Response::HTTP_OK);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Kitab/surah retrieved successfully',
-                'data' => $kitabSurah
+                'message' => 'Complaint types retrieved successfully',
+                'data' => $jenisAduan
             ], Response::HTTP_OK);
         } catch (\Exception $e) {
-            Log::error('Failed to retrieve kitab/surah: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while retrieving kitab/surah',
-                'error' => 'Internal server error'
+                'message' => 'Failed to retrieve complaint types',
+                'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -49,17 +48,16 @@ class KitabSurahController extends Controller
     {
         try {
             $validated = $request->validate([
-                'jenis_setoran_id' => 'required|exists:jenis_setoran,id',
-                'nama' => 'required|string|max:255',
+                'nama' => 'required|string|max:255|unique:jenis_aduan,nama',
                 'deskripsi' => 'nullable|string'
             ]);
 
-            $kitabSurah = KitabSurah::create($validated);
+            $jenisAduan = JenisAduan::create($validated);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Kitab/surah created successfully',
-                'data' => $kitabSurah->load('jenisSetoran')
+                'message' => 'Complaint type created successfully',
+                'data' => $jenisAduan
             ], Response::HTTP_CREATED);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -68,11 +66,10 @@ class KitabSurahController extends Controller
                 'errors' => $e->errors()
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Exception $e) {
-            Log::error('Failed to create kitab/surah: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while creating kitab/surah',
-                'error' => 'Internal server error'
+                'message' => 'Failed to create complaint type',
+                'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -80,24 +77,23 @@ class KitabSurahController extends Controller
     public function show($id)
     {
         try {
-            $kitabSurah = KitabSurah::with('jenisSetoran')->findOrFail($id);
+            $jenisAduan = JenisAduan::findOrFail($id);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Kitab/surah retrieved successfully',
-                'data' => $kitabSurah
+                'message' => 'Complaint type retrieved successfully',
+                'data' => $jenisAduan
             ], Response::HTTP_OK);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kitab/surah not found',
+                'message' => 'Complaint type not found',
             ], Response::HTTP_NOT_FOUND);
         } catch (\Exception $e) {
-            Log::error('Failed to retrieve kitab/surah: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while retrieving kitab/surah',
-                'error' => 'Internal server error'
+                'message' => 'Failed to retrieve complaint type',
+                'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -105,25 +101,24 @@ class KitabSurahController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $kitabSurah = KitabSurah::findOrFail($id);
+            $jenisAduan = JenisAduan::findOrFail($id);
 
             $validated = $request->validate([
-                'jenis_setoran_id' => 'sometimes|exists:jenis_setoran,id',
-                'nama' => 'sometimes|string|max:255',
+                'nama' => 'sometimes|string|max:255|unique:jenis_aduan,nama,' . $id,
                 'deskripsi' => 'nullable|string'
             ]);
 
-            $kitabSurah->update($validated);
+            $jenisAduan->update($validated);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Kitab/surah updated successfully',
-                'data' => $kitabSurah->load('jenisSetoran')
+                'message' => 'Complaint type updated successfully',
+                'data' => $jenisAduan
             ], Response::HTTP_OK);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kitab/surah not found',
+                'message' => 'Complaint type not found',
             ], Response::HTTP_NOT_FOUND);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -132,11 +127,10 @@ class KitabSurahController extends Controller
                 'errors' => $e->errors()
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Exception $e) {
-            Log::error('Failed to update kitab/surah: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while updating kitab/surah',
-                'error' => 'Internal server error'
+                'message' => 'Failed to update complaint type',
+                'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -144,23 +138,23 @@ class KitabSurahController extends Controller
     public function destroy($id)
     {
         try {
-            $kitabSurah = KitabSurah::findOrFail($id);
-            $kitabSurah->delete();
+            $jenisAduan = JenisAduan::findOrFail($id);
+            $jenisAduan->delete();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Kitab/surah deleted successfully'
+                'message' => 'Complaint type deleted successfully'
             ], Response::HTTP_OK);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kitab/surah not found',
+                'message' => 'Complaint type not found',
             ], Response::HTTP_NOT_FOUND);
         } catch (\Exception $e) {
-            Log::error('Failed to delete kitab/surah: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while deleting kitab/surah',
-                'error' => 'Internal server error'
+                'message' => 'Failed to delete complaint type',
+                'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
