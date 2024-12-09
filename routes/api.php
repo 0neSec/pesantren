@@ -52,9 +52,9 @@ Route::middleware('auth:api')->group(function () {
     });
 
     // Educational Content Routes
-    Route::prefix('educational')->group(function () {
+    Route::prefix('kelas')->group(function () {
         // Resources accessible to all authenticated users
-        Route::prefix('kelas')->group(function () {
+        Route::prefix('/')->group(function () {
             Route::get('/', [KelasController::class, 'index']);
             Route::get('/{kelas}', [KelasController::class, 'show']);
 
